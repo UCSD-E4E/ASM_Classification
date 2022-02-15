@@ -3,7 +3,7 @@ import appdirs
 import yaml
 import pathlib
 import enum
-from device import Device, OnBoxDevice, RemoteSensorDevice
+from DataInterface.device import Device, OnBoxDevice, RemoteSensorDevice
 
 class DeviceManager:
     app_name = 'ASMDataServer'
@@ -37,7 +37,7 @@ class DeviceManager:
             elif os.path.isfile(user_config):
                 config_path = user_config
             else:
-                config_path = pathlib.Path(__file__).parents[1].absolute() + 'asm_config.yaml'
+                config_path = os.path.join(pathlib.Path(__file__).parents[1].absolute(), 'asm_config.yaml')
         except Exception:
             raise RuntimeError("Config file \"asm_config.yaml\" not found")
         
@@ -54,10 +54,10 @@ class DeviceManager:
         self.device_list = []
         self.remote_sensor_device = None
         self.on_box_device = None
-        with open(self.data_dir, 'r') as device_stream:
+        with open(os.path.join(self.data_dir, "devices.yaml"), 'r') as device_stream:
             device_info_dict = yaml.safe_load(device_stream)
-            for id, device_info in device_info_dict:
-                if device_info['type'] == self.device_type['remote_sensor']:
+            for id, device_info in device_info_dict.items():
+                if device_info['type'] == self.device_type['on_box_sensor']:
                     device = OnBoxDevice(uuid=id,
                                 desc=device_info['desc'],
                                 fw_ver=device_info['fw_ver'],
@@ -66,8 +66,8 @@ class DeviceManager:
                                 type=device_info['type'],
                                 datapath=self.data_dir + str(id),
                                 labelpath="8124cb7c-41ec-11ec-aaad-e45f015ed519")
-                    self.remote_sensor_device = device
-                elif device_info['type'] == self.device_type['on_box_sensor']:
+                    self.on_box_device = device
+                elif device_info['type'] == self.device_type['remote_sensor']:
                     device = RemoteSensorDevice(uuid=id,
                                 desc=device_info['desc'],
                                 fw_ver=device_info['fw_ver'],
@@ -75,7 +75,7 @@ class DeviceManager:
                                 loc_units=device_info['location_units'],
                                 type=device_info['type'],
                                 datapath=self.data_dir + str(id))
-                    self.on_box_device = device
+                    self.remote_sensor_device = device
                 else:
                     device = Device(uuid=id,
                                 desc=device_info['desc'],

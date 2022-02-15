@@ -15,36 +15,11 @@ class Device(ABC):
         self.location_units = loc_units
         self.type = type
         self.datapath = datapath
+        self.labelpath = datapath
 
-    @abstractmethod
-    def data(self):
-        pass
-
-    @abstractmethod
-    def dataLabels(self):
-        pass
-
-    @abstractmethod
-    def metadata(self):
-        pass
-
-    @abstractmethod
-    def dataFormat(self):
-        pass
-
-    @abstractmethod
-    def dataPeriod(self):
-        pass
-
-
-class OnBoxDevice(Device):
-    def __init__(self, uuid, desc, fw_ver, loc, loc_units, type, datapath, labelpath):
-        super().___init___(uuid, desc, fw_ver, loc, loc_units, type, datapath)
-        self.labelpath = labelpath
-    
     def data(self):
         files = []
-        for file in os.listdir():
+        for file in os.listdir(self.datapath):
             if file.endswith(".mp4"):
                 files.append(self.uuid + "/" +  str(file))
         return files
@@ -57,6 +32,18 @@ class OnBoxDevice(Device):
             label = (datetime.fromisoformat(row[0]), row[1])
             labels.append(label)
         return labels
+
+    def metadata(self):
+        pass
+
+    def dataPeriod(self):
+        pass
+
+
+class OnBoxDevice(Device):
+    def __init__(self, uuid, desc, fw_ver, loc, loc_units, type, datapath, labelpath):
+        super().___init___(uuid, desc, fw_ver, loc, loc_units, type, datapath)
+        self.labelpath = labelpath
 
 
 class RemoteSensorDevice(Device):
