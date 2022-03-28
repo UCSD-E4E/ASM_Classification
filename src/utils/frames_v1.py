@@ -56,6 +56,10 @@ def get_frame(video,root_path,save_path):
     #Getting the fps for a video, assuming fps is constant throughout the video (general case)
     fps = vidcap.get(cv2.CAP_PROP_FPS)
     success,image = vidcap.read()
+
+    if not success:
+        sys.exit("Reading Video file failed")
+        
     pic_name = os.path.join(save_path, 'frames',video.split('/')[-2], video.split('/')[-1].split('.mp4')[0])
     count = 0
     while success:
@@ -93,7 +97,7 @@ def match_pic_label(df_pic_time, df_label):
         i/p: dataframe containing pic,timestamp information and dataframe containing label,timestamp information
         o/p: dataframe containing pic,label information
     '''
-
+    # pdb.set_trace()
     pic_label_list = []
     df_label = df_label.sort_values('timestamp').reset_index(drop=True)
     df_pic_time = df_pic_time.sort_values('timestamp').reset_index(drop=True)
@@ -156,7 +160,7 @@ def main():
         for i, video in tqdm(enumerate(videos),total=len(videos)):
             frame = get_frame(video,args.root_path,args.save_path)
             pic_time_list.extend(frame)
-
+    # pdb.set_trace()
    
     df_pic_time =pd.DataFrame(pic_time_list, columns =['pic_name', 'timestamp']) 
     

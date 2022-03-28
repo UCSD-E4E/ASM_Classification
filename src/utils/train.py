@@ -8,10 +8,11 @@ from AyeAyeDataset import AyeAyeDataset
 import torch.optim as optim
 import torch.nn as nn
 import argparse
+from tqdm import tqdm
+import os
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
-
 
 def main():
     # Set random seed
@@ -41,17 +42,19 @@ def main():
         ]
     )
 
-    # Load the Training Dataset
-    dataset_train = AyeAyeDataset(root="../asm-nas/processed_data", data_annotations="../asm-nas/processed_data/csv/Train.csv", data_frames="./frames", transforms=train_transform)
-    # Load the Validation Dataset
-    dataset_validation = AyeAyeDataset(root="../asm-nas/processed_data", data_annotations="../asm-nas/processed_data/csv/Validation.csv", data_frames="./frames", transforms=val_transform)
-    # Load the Test Dataset
-    dataset_test = AyeAyeDataset(root="../asm-nas/processed_data", data_annotations="../asm-nas/processed_data/csv/Test.csv", data_frames="./frames", transforms=val_transform)
+    if args.load_n_test is not None:
+        # Load the Training Dataset
+        dataset_train = AyeAyeDataset(root=args.frame_root, data_annotations=args.train_csv, data_frames="./frames", transforms=train_transform)
+        # Load the Validation Dataset
+        dataset_validation = AyeAyeDataset(root=args.frame_root, data_annotations=args.valid_csv, data_frames="./frames", transforms=val_transform)
+        # Create the Training Dataset into a Dataloader
+        data_loader = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
+        # Create the Validation Dataset into a Dataloader
+        data_loader_validation = torch.utils.data.DataLoader(dataset_validation, batch_size=args.batch_size, shuffle=True)
 
-    # Create the Training Dataset into a Dataloader
-    data_loader = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
-    # Create the Validation Dataset into a Dataloader
-    data_loader_validation = torch.utils.data.DataLoader(dataset_validation, batch_size=args.batch_size, shuffle=True)
+
+    # Load the Test Dataset
+    dataset_test = AyeAyeDataset(root=args.frame_root, data_annotations=args.test_csv, data_frames="./frames", transforms=val_transform)
     # Create the Test Dataset into a Dataloader
     data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=True)
 
@@ -73,10 +76,10 @@ def main():
     # If cuda is available, will use that or then your computer's CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
-    print("Device Intialized")
+    print("Device Intialized: {}".format(device))
 
     # Training
-    if args.load is None:
+    if args.load_n_test is None:
         # Using a Binary Cross Entropy Loss function
         criterion = nn.BCEWithLogitsLoss()
         # Using SGD Optimizer (Other options are Adam/RMSprop)
@@ -85,15 +88,12 @@ def main():
         valid_loss_min = np.Inf
         print("Start Training")
         for epoch in range(args.num_epochs):
-
+            print("====================== Epoch {}/{} ======================".format(epoch, args.num_epochs))
             train_loss = 0.0
             valid_loss = 0.0
-            batch_idx = 0
             # train the model
             model.train()
-            for image, label, name in data_loader:
-                if batch_idx % 50 == 0:
-                    print("Training batch {}".format(batch_idx))
+            for image, label, name in tqdm(data_loader):
                 if torch.cuda.is_available():
                     image, label = image.cuda(), label.cuda()
                 # Zero the gradients
@@ -110,11 +110,10 @@ def main():
                 # Update model parameters
                 optimizer.step()
                 train_loss += loss.item()
-                batch_idx += 1
 
             # validate the model
             model.eval()
-            for image, label, name in data_loader_validation:
+            for image, label, name in tqdm(data_loader_validation):
                 if torch.cuda.is_available():
                     image, label = image.cuda(), label.cuda()
                 # Predict the image
@@ -135,7 +134,7 @@ def main():
             # Save new model if there is a lower validation loss
             if valid_loss <= valid_loss_min:
                 print("Validation loss decreased (",valid_loss_min, " --> ",valid_loss, ").  Saving model")
-                torch.save(model.state_dict(), './src/utils/Saved_models/PyTorch_Binary_Classifier.pth')
+                torch.save(model.state_dict(), os.path.join(args.check_point_path, args.model_name))
                 valid_loss_min = valid_loss
 
         print('Finished Training')
@@ -143,7 +142,7 @@ def main():
     # Load an existing model
     else:
         print("Load model")
-        model.load_state_dict(torch.load(args.load))
+        model.load_state_dict(torch.load(args.load_n_test))
 
     # Prediction on Test Set
 
@@ -151,25 +150,25 @@ def main():
     class_dict = {}
     preds = []
     labels = []
+    print('Start Testing')
     # Go through each image in directory
     model.eval()
-    for image, label, name in data_loader_test:
+    for image, label, name in tqdm(data_loader_test):
         if torch.cuda.is_available():
             image, label = image.cuda(), label.cuda()
         output = model(image)
         rslt = (output) > 0.5  # Get result of prediction
         if rslt[0][0].item() is True:
-            class_dict[name] = 1  # Store prediction with corresponging image name
+            class_dict[name[0]] = 1  # Store prediction with corresponging image name
             preds.append(1)
         else:
-            class_dict[name] = 0
+            class_dict[name[0]] = 0
             preds.append(0)
         labels.append(label[0].item())
 
     # ADD IN CSV WRITING HERE USING 'class_dict'
-    csv_file_name = '../asm-nas/processed_data/csv/prediction_results_torch.csv'
-    class_dict_df = pd.DataFrame.from_dict(class_dict, orient='index', columns=['Owl'])
-    class_dict_df.to_csv(csv_file_name, index_label="Name")
+    class_dict_df = pd.DataFrame.from_dict(class_dict, orient='index', columns=['label'])
+    class_dict_df.to_csv(args.output_csv_path, index_label="pic_name")
     print('Confusion Matrix: ')
     #                    predicted no:        predicted yes:
     # actual no:         Tn                      Fp
@@ -190,8 +189,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_epochs', type=int, default=4, help='number of epochs')
     parser.add_argument('--batch_size', type=int, default=8, help='batch size')
-    parser.add_argument('--load', type=str, default=None, help='path to saved model, skip training if not None')
     parser.add_argument('--seed', type=int, default=111, help='random seed')
     parser.add_argument('--no_finetuning', action='store_true', help='only update fc layer')
+    parser.add_argument('--model_name', type=str, default='Name of the model to be saved, eg. PyTorch_Binary_Classifier.pth')
+    parser.add_argument('--load_n_test', type=str, default=None, help='path to saved model, skip training if not None')
+
+    parser.add_argument("--frame_root", type=str, default = '/home/burrowingowl/asm-nas/processed_data')
+    parser.add_argument("--train_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Train.csv')
+    parser.add_argument("--test_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Test.csv')
+    parser.add_argument("--valid_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Test.csv')
+    parser.add_argument("--check_point_path", type=str, default = '/home/burrowingowl/ASM_Classification/checkpoints')
+    parser.add_argument("--output_csv_path", type=str, default = '/home/burrowingowl/ASM_Classification/data/prediction_results_torch.csv')
+
     args = parser.parse_args()
     main()
