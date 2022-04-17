@@ -32,14 +32,14 @@ class AyeAyeDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         """Support indexing to get the images, labels, and names of samples"""
         # Open Image and Resize
-        image = Image.open(os.path.join(self.root, self.path_to_data_frames, self.imgs_frame.iloc[index, 0])).convert("RGB").resize((100, 100))
+        image = Image.open(os.path.join(self.root, self.path_to_data_frames, self.imgs_frame.iloc[index, 1])).convert("RGB").resize((100, 100))
         # Get label from the data frame for this index
-        label = self.imgs_frame.iloc[index, 1]
+        label = self.imgs_frame.iloc[index, 2]
         label = 0 if label == 3 else 1
         if self.transforms is not None:
             image = self.transforms(image)
         # Find the File Name
-        name = self.imgs_frame.iloc[index, 0]
+        name = self.imgs_frame.iloc[index, 1]
         return image, label, name
 
     def __len__(self):

@@ -14,6 +14,19 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 
+OUTPUT_CSV_PATH = '/home/burrowingowl/ASM_Classification/data/prediction_results_torch.csv'
+
+# FRAME_ROOT = '/home/burrowingowl/asm-nas/processed_data'
+FRAME_ROOT = '/home/burrowingowl/asm-nas/demo_data'
+
+# TRAIN_CSV = '/home/burrowingowl/asm-nas/processed_data/csv/Train.csv'
+
+TEST_CSV = '/home/burrowingowl/asm-nas/demo_data/pic_label.csv'
+# TEST_CSV = '/home/burrowingowl/asm-nas/processed_data/csv/demoTest.csv'
+
+# VALID_CSV = '/home/burrowingowl/asm-nas/processed_data/csv/Validation.csv'
+CHECK_POINT_PATH = '/home/burrowingowl/ASM_Classification/checkpoints'
+
 def main():
     # Set random seed
     torch.manual_seed(args.seed)
@@ -29,7 +42,6 @@ def main():
             # did not give better results
             transforms.RandomResizedCrop(100),
             transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(brightness=.7, contrast=.3),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]
@@ -43,21 +55,19 @@ def main():
         ]
     )
 
-    if args.load_n_test is None:
-        # Load the Training Dataset
-        dataset_train = AyeAyeDataset(root=args.frame_root, data_annotations=args.train_csv, data_frames="./frames", transforms=train_transform)
-        # Load the Validation Dataset
-        dataset_validation = AyeAyeDataset(root=args.frame_root, data_annotations=args.valid_csv, data_frames="./frames", transforms=val_transform)
-        # Create the Training Dataset into a Dataloader
-        data_loader = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
-        # Create the Validation Dataset into a Dataloader
-        data_loader_validation = torch.utils.data.DataLoader(dataset_validation, batch_size=args.batch_size, shuffle=True)
-
-
+    # # Load the Training Dataset
+    # dataset_train = AyeAyeDataset(root=FRAME_ROOT, data_annotations=TRAIN_CSV, data_frames="./frames", transforms=train_transform)
+    # # Load the Validation Dataset
+    # dataset_validation = AyeAyeDataset(root=FRAME_ROOT, data_annotations=VALID_CSV, data_frames="./frames", transforms=val_transform)
     # Load the Test Dataset
-    dataset_test = AyeAyeDataset(root=args.frame_root, data_annotations=args.test_csv, data_frames="./frames", transforms=val_transform)
+    dataset_test = AyeAyeDataset(root=FRAME_ROOT, data_annotations=TEST_CSV, data_frames="./frames", transforms=val_transform)
+
+    # # Create the Training Dataset into a Dataloader
+    # data_loader = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
+    # # Create the Validation Dataset into a Dataloader
+    # data_loader_validation = torch.utils.data.DataLoader(dataset_validation, batch_size=args.batch_size, shuffle=True)
     # Create the Test Dataset into a Dataloader
-    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=True)
+    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False)
 
     # Load pretrained RESNET-18
     # Torchvision has other models we can experiment with if needed
@@ -80,7 +90,7 @@ def main():
     print("Device Intialized: {}".format(device))
 
     # Training
-    if args.load_n_test is None:
+    if args.load is None:
         # Using a Binary Cross Entropy Loss function
         criterion = nn.BCEWithLogitsLoss()
         # Using SGD Optimizer (Other options are Adam/RMSprop)
@@ -135,7 +145,7 @@ def main():
             # Save new model if there is a lower validation loss
             if valid_loss <= valid_loss_min:
                 print("Validation loss decreased (",valid_loss_min, " --> ",valid_loss, ").  Saving model")
-                torch.save(model.state_dict(), os.path.join(args.check_point_path, args.model_name))
+                torch.save(model.state_dict(), os.path.join(CHECK_POINT_PATH, args.model_name))
                 valid_loss_min = valid_loss
 
         print('Finished Training')
@@ -143,7 +153,7 @@ def main():
     # Load an existing model
     else:
         print("Load model")
-        model.load_state_dict(torch.load(args.load_n_test))
+        model.load_state_dict(torch.load(args.load))
 
     # Prediction on Test Set
 
@@ -169,7 +179,8 @@ def main():
 
     # ADD IN CSV WRITING HERE USING 'class_dict'
     class_dict_df = pd.DataFrame.from_dict(class_dict, orient='index', columns=['label'])
-    class_dict_df.to_csv(args.output_csv_path, index_label="pic_name")
+    class_dict_df = class_dict_df.sort_index()
+    class_dict_df.to_csv(OUTPUT_CSV_PATH, index_label="pic_name")
     print('Confusion Matrix: ')
     #                    predicted no:        predicted yes:
     # actual no:         Tn                      Fp
@@ -190,17 +201,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_epochs', type=int, default=4, help='number of epochs')
     parser.add_argument('--batch_size', type=int, default=8, help='batch size')
+    parser.add_argument('--load', type=str, default=None, help='path to saved model, skip training if not None')
     parser.add_argument('--seed', type=int, default=111, help='random seed')
     parser.add_argument('--no_finetuning', action='store_true', help='only update fc layer')
-    parser.add_argument('--model_name', type=str, default='PyTorch_Binary_Classifier.pth', help='Name of the model to be saved, eg. PyTorch_Binary_Classifier.pth')
-    parser.add_argument('--load_n_test', type=str, default=None, help='path to saved model, skip training if not None')
-
-    parser.add_argument("--frame_root", type=str, default = '/home/burrowingowl/asm-nas/processed_data')
-    parser.add_argument("--train_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Train.csv')
-    parser.add_argument("--test_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Test.csv')
-    parser.add_argument("--valid_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Validation.csv')
-    parser.add_argument("--check_point_path", type=str, default = '/home/burrowingowl/ASM_Classification/checkpoints')
-    parser.add_argument("--output_csv_path", type=str, default = '/home/burrowingowl/ASM_Classification/data/prediction_results_torch.csv')
-
+    parser.add_argument('--model_name', type=str, default='PyTorch_Binary_Classifier.pth')
     args = parser.parse_args()
     main()
