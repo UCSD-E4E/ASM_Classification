@@ -14,7 +14,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 
-def main():
+def main(args):
     # Set random seed
     torch.manual_seed(args.seed)
 
@@ -75,7 +75,11 @@ def main():
     )
 
     # If cuda is available, will use that or then your computer's CPU
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        device = args.device
+    else:
+        device = "cpu"
     model.to(device)
     print("Device Intialized: {}".format(device))
 
@@ -96,7 +100,7 @@ def main():
             model.train()
             for image, label, name in tqdm(data_loader):
                 if torch.cuda.is_available():
-                    image, label = image.cuda(), label.cuda()
+                    image, label = image.to(device), label.to(device)
                 # Zero the gradients
                 optimizer.zero_grad()
                 # Predict the image
@@ -189,7 +193,7 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_epochs', type=int, default=4, help='number of epochs')
-    parser.add_argument('--batch_size', type=int, default=8, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=1024, help='batch size')
     parser.add_argument('--seed', type=int, default=111, help='random seed')
     parser.add_argument('--no_finetuning', action='store_true', help='only update fc layer')
     parser.add_argument('--model_name', type=str, default='PyTorch_Binary_Classifier.pth', help='Name of the model to be saved, eg. PyTorch_Binary_Classifier.pth')
@@ -201,6 +205,8 @@ if __name__ == '__main__':
     parser.add_argument("--valid_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Validation.csv')
     parser.add_argument("--check_point_path", type=str, default = '/home/burrowingowl/ASM_Classification/checkpoints')
     parser.add_argument("--output_csv_path", type=str, default = '/home/burrowingowl/ASM_Classification/data/prediction_results_torch.csv')
+    
+    parser.add_argument("--device", type=str, default = 'cuda:0')
 
     args = parser.parse_args()
-    main()
+    main(args)
