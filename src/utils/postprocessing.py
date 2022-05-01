@@ -13,7 +13,7 @@ def formatting(path_label: str, path_time_stamp: str, config) -> str:
     return: A path to the output csv file containing the labels of all time stamps
         format: [(time_stamp1, label1),...]
     '''
-    OUTPUT_CSV = '/home/burrowingowl/ASM_Classification/data/postprocessing_output_change.csv'
+    OUTPUT_CSV = '/home/behe/ASM_Classification/output/postprocessing_output_change.csv'
     out_format = config['format']
 
     pic_label_df = pd.read_csv(path_label)
