@@ -33,6 +33,7 @@ def on_created(event):
     print(csv_)
 
 '''
+UNCOMMENT DURING TESTING
 Uncomment only during testing the script 
 
 def on_moved(event):
@@ -76,6 +77,7 @@ if __name__ == "__main__":
     my_event_handler.on_created = on_created
    
     '''
+    UNCOMMENT DURING TESTING
     Uncomment only during testing the script 
 
     my_event_handler.on_modified = on_modified
