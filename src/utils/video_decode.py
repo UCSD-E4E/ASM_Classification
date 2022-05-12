@@ -82,12 +82,9 @@ def get_frame(video):
 
 
 def fetch_frames(video_file):
-    
-    # df_video = pd.read_csv(args.video_csv)
-    # videos = df_video["video"].tolist()
-    # pic_time_list = []
-    # video = video_file
-    # pdb.set_trace()
+    '''
+        fetch_frames splits the video into frames and returns two lists containing the frames and corresponding timestamps
+    '''    
     timestamp,frame = get_frame(video_file)
     return frame,timestamp
 
