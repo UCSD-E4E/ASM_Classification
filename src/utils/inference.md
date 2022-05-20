@@ -21,5 +21,5 @@ To test the script keep following points in mind:
 
 If facing any issues during testing please reach out to Anisha Pal on slack.
 
-##ERROR
+## ERROR
 Script crashing -> Fix this , see what's the issue 
