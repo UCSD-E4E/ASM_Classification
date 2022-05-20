@@ -20,3 +20,6 @@ To test the script keep following points in mind:
 4. If after pt 2. expected output in pt.3 is not observed please perform same copy operation again (NOTE: Do not remove the file, run the same cp command with same file again)
 
 If facing any issues during testing please reach out to Anisha Pal on slack.
+
+##ERROR
+Script crashing -> Fix this , see what's the issue 
