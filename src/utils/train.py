@@ -5,6 +5,7 @@ import torch.utils.data
 import torchvision.transforms as transforms
 import pandas as pd
 from AyeAyeDataset import AyeAyeDataset
+from split_data import split
 import torch.optim as optim
 import torch.nn as nn
 import argparse
@@ -29,7 +30,8 @@ def main(args):
             # did not give better results
             transforms.RandomResizedCrop(100),
             transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(brightness=.7, contrast=.3),
+            #transforms.ColorJitter(brightness=.7, contrast=.3),
+            transforms.Grayscale(num_output_channels=3),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]
@@ -38,24 +40,34 @@ def main(args):
     val_transform = transforms.Compose(
         [
             transforms.CenterCrop(100),
+            transforms.Grayscale(num_output_channels=3),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]
     )
+    
+    if args.no_data_split is False:
+        train, test, val = split(args.pic_label, 0.2, 0.25, None, None)
 
     if args.load_n_test is None:
-        # Load the Training Dataset
-        dataset_train = AyeAyeDataset(root=args.frame_root, data_annotations=args.train_csv, data_frames="./frames", transforms=train_transform)
-        # Load the Validation Dataset
-        dataset_validation = AyeAyeDataset(root=args.frame_root, data_annotations=args.valid_csv, data_frames="./frames", transforms=val_transform)
+        if args.no_data_split:
+            # Load the Training Dataset
+            dataset_train = AyeAyeDataset(root=args.frame_root, data_annotations=args.train_csv, data_frames="./data_feb/frames", transforms=train_transform)
+            # Load the Validation Dataset
+            dataset_validation = AyeAyeDataset(root=args.frame_root, data_annotations=args.valid_csv, data_frames="./data_feb/frames", transforms=val_transform)
+        else:
+            dataset_train = AyeAyeDataset(root=args.frame_root, data_annotations_df=train, data_frames="./data_feb/frames", transforms=train_transform)
+            dataset_validation = AyeAyeDataset(root=args.frame_root, data_annotations_df=val, data_frames="./data_feb/frames", transforms=val_transform)
         # Create the Training Dataset into a Dataloader
         data_loader = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
         # Create the Validation Dataset into a Dataloader
         data_loader_validation = torch.utils.data.DataLoader(dataset_validation, batch_size=args.batch_size, shuffle=True)
 
-
-    # Load the Test Dataset
-    dataset_test = AyeAyeDataset(root=args.frame_root, data_annotations=args.test_csv, data_frames="./frames", transforms=val_transform)
+    if args.no_data_split:
+        # Load the Test Dataset
+        dataset_test = AyeAyeDataset(root=args.frame_root, data_annotations=args.test_csv, data_frames="./data_feb/frames", transforms=val_transform)
+    else:
+        dataset_test = AyeAyeDataset(root=args.frame_root, data_annotations_df=test, data_frames="./data_feb/frames", transforms=val_transform)
     # Create the Test Dataset into a Dataloader
     data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=True)
 
@@ -196,17 +208,19 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=1024, help='batch size')
     parser.add_argument('--seed', type=int, default=111, help='random seed')
     parser.add_argument('--no_finetuning', action='store_true', help='only update fc layer')
-    parser.add_argument('--model_name', type=str, default='PyTorch_Binary_Classifier.pth', help='Name of the model to be saved, eg. PyTorch_Binary_Classifier.pth')
-    parser.add_argument('--load_n_test', type=str, default=None, help='path to saved model, skip training if not None')
-
-    parser.add_argument("--frame_root", type=str, default = '/home/burrowingowl/asm-nas/processed_data')
-    parser.add_argument("--train_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Train.csv')
-    parser.add_argument("--test_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Test.csv')
-    parser.add_argument("--valid_csv", type=str, default = '/home/burrowingowl/asm-nas/processed_data/csv/Validation.csv')
-    parser.add_argument("--check_point_path", type=str, default = '/home/burrowingowl/ASM_Classification/checkpoints')
-    parser.add_argument("--output_csv_path", type=str, default = '/home/burrowingowl/ASM_Classification/data/prediction_results_torch.csv')
-    
     parser.add_argument("--device", type=str, default = 'cuda:0')
 
+    parser.add_argument('--model_name', type=str, default='PyTorch_Binary_Classifier.pth', help='Name of the model to be saved, eg. PyTorch_Binary_Classifier.pth')
+    parser.add_argument('--load_n_test', type=str, default=None, help='path to saved model, skip training if not None')
+    parser.add_argument("--check_point_path", type=str)
+
+    parser.add_argument("--pic_label", type=str, default = '/mnt/aye-aye-sleep-monitoring/demo_data/may/pic_label.csv')
+    parser.add_argument("--no_data_split", action='store_true', help='disable train test split and use existing csv files')
+    parser.add_argument("--train_csv", type=str, default = '/mnt/aye-aye-sleep-monitoring/processed_data/csv/Train.csv')
+    parser.add_argument("--valid_csv", type=str, default = '/mnt/aye-aye-sleep-monitoring/processed_data/csv/Validation.csv')
+    parser.add_argument("--test_csv", type=str, default = '/mnt/aye-aye-sleep-monitoring/processed_data/csv/Test.csv')
+    parser.add_argument("--frame_root", type=str, default = '/mnt/aye-aye-sleep-monitoring/processed_data')
+    parser.add_argument("--output_csv_path", type=str)
+    
     args = parser.parse_args()
     main(args)

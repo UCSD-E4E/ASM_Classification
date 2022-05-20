@@ -10,7 +10,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class AyeAyeDataset(torch.utils.data.Dataset):
     """Aye-aye Dataset."""
-    def __init__(self, root: str, data_annotations: str, data_frames: str, transforms=None):
+    def __init__(self, root: str, data_annotations=None: str, data_annotatons_df=None, data_frames: str, transforms=None):
         """
         Args:
             root (string): Path to the root directory where images/csv files are located.
@@ -23,7 +23,10 @@ class AyeAyeDataset(torch.utils.data.Dataset):
         # Transforms are any image modifications
         self.transforms = transforms
         # CSV File of the images and labels
-        self.imgs_frame = pd.read_csv(data_annotations)
+        if data_annotations is not None:
+            self.imgs_frame = pd.read_csv(data_annotations)
+        else:
+            self.imgs_frame = data_annotations_df
         # Path to the CSV File
         self.path_to_data_annotations = data_annotations
         # Relative path to the data folder
