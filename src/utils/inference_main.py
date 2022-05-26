@@ -25,29 +25,33 @@ def on_created(event):
     '''
 
     csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
-    print(event.src_path)
 
+    if not(os.path.exists(csv_)):
+        print(event.src_path)
     #Waiting for 5 seconds for video file to finish saving before starting inference script
-    time.sleep(5) 
-    inference_func(args.load_n_test, event.src_path,args.seed,csv_)
-    print(csv_)
+        time.sleep(5) 
+        inference_func(args.load_n_test, event.src_path,args.seed,csv_)
+        print(csv_)
+    return event.src_path
 
 '''
 UNCOMMENT DURING TESTING
 Uncomment only during testing the script 
-
 def on_moved(event):
     csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
     print(event.src_path)
     time.sleep(5)
     inference_func(args.load_n_test, event.src_path,args.seed,csv_)
     print(csv_)
+    return event.src_path
+
 def on_modified(event):
     csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
-    print(event.src_path)
-    time.sleep(5)
-    inference_func(args.load_n_test, event.src_path,args.seed,csv_)
-    print(csv_)
+    if not (os.path.exists(csv_)):
+        print(event.src_path)
+        time.sleep(5)
+        inference_func(args.load_n_test, event.src_path,args.seed,csv_)
+        print(csv_)
     return event.src_path
 '''
 
@@ -67,7 +71,7 @@ if __name__ == "__main__":
     '''
     patterns = ["*"]
     ignore_patterns = None
-    ignore_directories = False
+    ignore_directories = True
     case_sensitive = True
 
     '''
@@ -83,13 +87,14 @@ if __name__ == "__main__":
     my_event_handler.on_modified = on_modified
     my_event_handler.on_moved = on_moved
     '''
+
     path = args.folder
 
     '''
         Monitor our filesystem, looking for changes that will be handled by the event handler.
         go_recursively - if enabled will go through changes in sub directories as well
     '''
-    go_recursively = False
+    go_recursively = True
     my_observer = Observer()
     my_observer.schedule(my_event_handler, path, recursive=go_recursively)
     my_observer.start()

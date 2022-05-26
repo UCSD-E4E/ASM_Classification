@@ -10,7 +10,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class AyeAyeDataset(torch.utils.data.Dataset):
     """Aye-aye Dataset."""
-    def __init__(self, root: str, data_annotations=None: str, data_annotatons_df=None, data_frames: str, transforms=None):
+    def __init__(self, root: str, data_frames: str,data_annotations=None, data_annotatons_df=None, transforms=None):
         """
         Args:
             root (string): Path to the root directory where images/csv files are located.
