@@ -58,7 +58,8 @@ def get_frame(video,root_path,save_path):
     success,image = vidcap.read()
 
     if not success:
-        sys.exit("Reading Video file failed")
+        sys.exit("Reading Video file failed:"+video)
+        exit()
         
     pic_name = os.path.join(save_path, 'frames',video.split('/')[-2], video.split('/')[-1].split('.mp4')[0])
     count = 0

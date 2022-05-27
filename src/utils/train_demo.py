@@ -14,18 +14,19 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 
-OUTPUT_CSV_PATH = '/home/burrowingowl/ASM_Classification/data/prediction_results_torch.csv'
+OUTPUT_CSV_PATH = '/home/behe/ASM_Classification/output/00.csv'
 
 # FRAME_ROOT = '/home/burrowingowl/asm-nas/processed_data'
-FRAME_ROOT = '/home/burrowingowl/asm-nas/demo_data'
+FRAME_ROOT = '/mnt/aye-aye-sleep-monitoring/demo_data/may'
 
 # TRAIN_CSV = '/home/burrowingowl/asm-nas/processed_data/csv/Train.csv'
 
-TEST_CSV = '/home/burrowingowl/asm-nas/demo_data/pic_label.csv'
+TEST_CSV = '/mnt/aye-aye-sleep-monitoring/demo_data/may/pic_label.csv'
 # TEST_CSV = '/home/burrowingowl/asm-nas/processed_data/csv/demoTest.csv'
 
 # VALID_CSV = '/home/burrowingowl/asm-nas/processed_data/csv/Validation.csv'
 CHECK_POINT_PATH = '/home/burrowingowl/ASM_Classification/checkpoints'
+CHECK_POINT = "/home/behe/ASM_Classification/checkpoints/PyTorch_Binary_Classifier_april.pth"
 
 def main():
     # Set random seed
@@ -86,74 +87,12 @@ def main():
 
     # If cuda is available, will use that or then your computer's CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    model.to("cuda:0")
     print("Device Intialized: {}".format(device))
 
-    # Training
-    if args.load is None:
-        # Using a Binary Cross Entropy Loss function
-        criterion = nn.BCEWithLogitsLoss()
-        # Using SGD Optimizer (Other options are Adam/RMSprop)
-        optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-
-        valid_loss_min = np.Inf
-        print("Start Training")
-        for epoch in range(args.num_epochs):
-            print("====================== Epoch {}/{} ======================".format(epoch, args.num_epochs))
-            train_loss = 0.0
-            valid_loss = 0.0
-            # train the model
-            model.train()
-            for image, label, name in tqdm(data_loader):
-                if torch.cuda.is_available():
-                    image, label = image.cuda(), label.cuda()
-                # Zero the gradients
-                optimizer.zero_grad()
-                # Predict the image
-                output = model(image)
-                # Change actual label into format criterion can read
-                label = label.unsqueeze(1)
-                label = label.float()
-                # Find the Loss value
-                loss = criterion(output, label)
-                # Back-Propagate
-                loss.backward()
-                # Update model parameters
-                optimizer.step()
-                train_loss += loss.item()
-
-            # validate the model
-            model.eval()
-            for image, label, name in tqdm(data_loader_validation):
-                if torch.cuda.is_available():
-                    image, label = image.cuda(), label.cuda()
-                # Predict the image
-                output = model(image)
-                # Change actual label into format criterion can read
-                label = label.unsqueeze(1)
-                label = label.float()
-                # Find the Loss value
-                loss = criterion(output, label)
-                valid_loss += loss.item()
-
-            train_loss = train_loss/len(data_loader)
-            valid_loss = valid_loss/len(data_loader_validation)
-            
-            #print(f"Epoch: {epoch} \tTraining Loss: {train_loss} \tValidation Loss: {valid_loss}")
-            print("Epoch: {} \tTraining Loss: {} \tValidation Loss: {}".format(epoch, train_loss, valid_loss))
-
-            # Save new model if there is a lower validation loss
-            if valid_loss <= valid_loss_min:
-                print("Validation loss decreased (",valid_loss_min, " --> ",valid_loss, ").  Saving model")
-                torch.save(model.state_dict(), os.path.join(CHECK_POINT_PATH, args.model_name))
-                valid_loss_min = valid_loss
-
-        print('Finished Training')
-
-    # Load an existing model
-    else:
-        print("Load model")
-        model.load_state_dict(torch.load(args.load))
+  
+    print("Load model")
+    model.load_state_dict(torch.load(CHECK_POINT))
 
     # Prediction on Test Set
 
