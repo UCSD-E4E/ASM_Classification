@@ -3,14 +3,14 @@ import torch
 import torch.utils.data
 from PIL import Image
 import pandas as pd
-from video_decode import fetch_frames
+from ASMClassification.video_decode import fetch_frames
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class AyeAyeDataset(torch.utils.data.Dataset):
     """Aye-aye Dataset."""
-    def __init__(self, root: str, data_annotations=None: str, data_annotatons_df=None, data_frames: str, transforms=None):
+    def __init__(self, root: str, data_annotations: str=None, data_annotatons_df=None, data_frames: str = None, transforms=None):
         """
         Args:
             root (string): Path to the root directory where images/csv files are located.
@@ -48,7 +48,6 @@ class AyeAyeDataset(torch.utils.data.Dataset):
     def __len__(self):
         """Enables len(dataset) to return the length of the dataset."""
         return len(self.imgs_frame)
-
 
 class AyeAyeDatasetInference(torch.utils.data.Dataset):
     """Aye-aye Dataset for inference pipeline only."""

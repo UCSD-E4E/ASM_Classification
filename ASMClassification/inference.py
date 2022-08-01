@@ -4,7 +4,7 @@ import torchvision
 import torch.utils.data
 import torchvision.transforms as transforms
 import pandas as pd
-from AyeAyeDataset import AyeAyeDatasetInference
+from ASMClassification.AyeAyeDataset import AyeAyeDatasetInference
 import torch.optim as optim
 import torch.nn as nn
 import argparse
