@@ -16,41 +16,59 @@ from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 import argparse
 import os
-from inference import inference_func
+from ASMClassification import inference
+from ASMClassification.database import push_git
 
 
 def on_created(event):
     '''
         Function is called whenever a new video is detected in the folder being watched
     '''
+    main_folder = os.path.join(args.output_csv_folder,(args.load_n_test.split('/')[-1].split('.')[0]))
+    if not os.path.exists(main_folder):
+        os.makedirs(main_folder)
+    csv_ = os.path.join(main_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
 
-    csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
-    print(event.src_path)
-
+    if not(os.path.exists(csv_)):
+        print(event.src_path)
     #Waiting for 5 seconds for video file to finish saving before starting inference script
-    time.sleep(5) 
-    inference_func(args.load_n_test, event.src_path,args.seed,csv_)
-    print(csv_)
-
+        time.sleep(5) 
+        inference.inference_func(args.load_n_test, event.src_path,args.seed,csv_)
+        push_git(args.load_n_test,csv_,event.src_path)
+        print(csv_)
+    return event.src_path
 '''
 UNCOMMENT DURING TESTING
 Uncomment only during testing the script 
 
 def on_moved(event):
-    csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
-    print(event.src_path)
-    time.sleep(5)
-    inference_func(args.load_n_test, event.src_path,args.seed,csv_)
-    print(csv_)
+    main_folder = os.path.join(args.output_csv_folder,(args.load_n_test.split('/')[-1].split('.')[0]))
+    if not os.path.exists(main_folder):
+        os.makedirs(main_folder)
+    csv_ = os.path.join(main_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
+    #csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
+    if not(os.path.exists(csv_)):
+        print(event.src_path)
+        time.sleep(5)
+        inference_func(args.load_n_test, event.src_path,args.seed,csv_)
+        push_git(args.load_n_test,csv_,event.src_path)
+        print(csv_)
+    return event.src_path
+
 def on_modified(event):
-    csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
-    print(event.src_path)
-    time.sleep(5)
-    inference_func(args.load_n_test, event.src_path,args.seed,csv_)
-    print(csv_)
+    main_folder = os.path.join(args.output_csv_folder,(args.load_n_test.split('/')[-1].split('.')[0]))
+    if not os.path.exists(main_folder):
+        os.makedirs(main_folder)
+    csv_ = os.path.join(main_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
+    #csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
+    if not (os.path.exists(csv_)):
+        print(event.src_path)
+        time.sleep(5)
+        inference_func(args.load_n_test, event.src_path,args.seed,csv_)
+        push_git(args.load_n_test,csv_,event.src_path)
+        print(csv_)
     return event.src_path
 '''
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=111, help='random seed')
@@ -67,7 +85,7 @@ if __name__ == "__main__":
     '''
     patterns = ["*"]
     ignore_patterns = None
-    ignore_directories = False
+    ignore_directories = True
     case_sensitive = True
 
     '''
@@ -83,13 +101,14 @@ if __name__ == "__main__":
     my_event_handler.on_modified = on_modified
     my_event_handler.on_moved = on_moved
     '''
+
     path = args.folder
 
     '''
         Monitor our filesystem, looking for changes that will be handled by the event handler.
         go_recursively - if enabled will go through changes in sub directories as well
     '''
-    go_recursively = False
+    go_recursively = True
     my_observer = Observer()
     my_observer.schedule(my_event_handler, path, recursive=go_recursively)
     my_observer.start()
