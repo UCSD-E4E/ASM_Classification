@@ -11,6 +11,7 @@
 
 '''
 
+from pathlib import Path
 import time
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
@@ -37,43 +38,12 @@ def on_created(event):
         push_git(args.load_n_test,csv_,event.src_path)
         print(csv_)
     return event.src_path
-'''
-UNCOMMENT DURING TESTING
-Uncomment only during testing the script 
 
-def on_moved(event):
-    main_folder = os.path.join(args.output_csv_folder,(args.load_n_test.split('/')[-1].split('.')[0]))
-    if not os.path.exists(main_folder):
-        os.makedirs(main_folder)
-    csv_ = os.path.join(main_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
-    #csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
-    if not(os.path.exists(csv_)):
-        print(event.src_path)
-        time.sleep(5)
-        inference_func(args.load_n_test, event.src_path,args.seed,csv_)
-        push_git(args.load_n_test,csv_,event.src_path)
-        print(csv_)
-    return event.src_path
-
-def on_modified(event):
-    main_folder = os.path.join(args.output_csv_folder,(args.load_n_test.split('/')[-1].split('.')[0]))
-    if not os.path.exists(main_folder):
-        os.makedirs(main_folder)
-    csv_ = os.path.join(main_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
-    #csv_ = os.path.join(args.output_csv_folder, (event.src_path.split('/')[-1].split('.mp4')[0]+'.csv'))
-    if not (os.path.exists(csv_)):
-        print(event.src_path)
-        time.sleep(5)
-        inference_func(args.load_n_test, event.src_path,args.seed,csv_)
-        push_git(args.load_n_test,csv_,event.src_path)
-        print(csv_)
-    return event.src_path
-'''
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=111, help='random seed')
     parser.add_argument('--load_n_test', type=str, default=None, help='path to saved model')
-    parser.add_argument("--folder", type=str, default = '/home/burrowingowl/asm-nas/processed_data',help='path to the folder to be watched for new videos')
+    parser.add_argument("--folder", type=str, help='path to the folder to be watched for new videos')
     parser.add_argument("--output_csv_folder", type=str, default = ' Path to the output folder where the csv result for each video will be stored ')
 
     args = parser.parse_args()
@@ -98,11 +68,13 @@ if __name__ == "__main__":
     UNCOMMENT DURING TESTING
     Uncomment only during testing the script 
 
-    my_event_handler.on_modified = on_modified
-    my_event_handler.on_moved = on_moved
     '''
+    my_event_handler.on_modified = on_created
+    my_event_handler.on_moved = on_created
 
-    path = args.folder
+    path = Path(args.folder)
+    if not path.is_dir():
+        raise RuntimeError("folder is not a directory")
 
     '''
         Monitor our filesystem, looking for changes that will be handled by the event handler.
