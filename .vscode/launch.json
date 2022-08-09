@@ -9,7 +9,13 @@
             "type": "python",
             "request": "launch",
             "module": "ASMClassification.inference_main",
-            "justMyCode": true
+            "justMyCode": true,
+            "args": [
+                "--folder",
+                "/mnt/aye-aye-sleep-monitoring/processed_data",
+                "--output_csv_folder",
+                "/tmp/aye-aye-sleep-monitoring"
+            ]
         }
     ]
 }
